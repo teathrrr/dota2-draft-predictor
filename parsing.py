@@ -2,6 +2,8 @@ import requests
 import os
 from dotenv import load_dotenv
 import time
+import pandas as pd
+from IPython.display import display
 
 
 load_dotenv()
@@ -12,7 +14,7 @@ URL = "https://api.stratz.com/graphql"
 
 headers = {
   "Authorization": f"Bearer {token}",
-	"User-Agent": "dota2-predict",
+	"User-Agent": "STRATZ_API",
 	"Content-Type": "application/json"
 }
 
@@ -46,35 +48,59 @@ ids = [9054376412, 9054375945, 9054375279, 9054372150, 9054368575, 9054367155, 9
 ids_pag = [x - 220000 for x in ids]
 print(ids_pag)
 QUERY = """
-query ($ids: [Long]!) {
-  matches(ids: $ids) {
+query GetMatch($curr_id: Long!) {
+  match(id: $curr_id) {
     id
-    lobbyType
-    gameMode
-    startDateTime
+    durationSeconds
     didRadiantWin
-    isRadiantFirstPick
     players {
-      steamAccountId
       heroId
       isRadiant
+      isRandom
+      steamAccountId
     }
   }
 }
 """
 
 
-def fetch_matches(ids):
+def fetch_matches(curr_id):
 	r = requests.post(
 	URL,
-	json={"query": QUERY, "variables": {"ids": ids}},
+	json={"query": QUERY, "variables": {"curr_id": curr_id}},
 	headers=headers
 	)
 
 	r.raise_for_status()
-	return r.json()["data"]["matches"]
+	return r.json()["data"]["match"]
 
-data = []
+data = [{'id': 9054156412, 'durationSeconds': 2646, 'didRadiantWin': False, 'players': [{'heroId': 30, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 797355128}, {'heroId': 7, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 119951490}, {'heroId': 93, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 191862235}, {'heroId': 43, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 429133201}, {'heroId': 74, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 165559210}, {'heroId': 71, 'isRadiant': False, 'isRandom': True, 'steamAccountId': 205400018}, {'heroId': 101, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 1598599957}, {'heroId': 114, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 742343064}, {'heroId': 26, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 696411811}, {'heroId': 104, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 1400866711}]}, {'id': 9054156412, 'durationSeconds': 2646, 'didRadiantWin': False, 'players': [{'heroId': 30, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 797355128}, {'heroId': 7, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 119951490}, {'heroId': 93, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 191862235}, {'heroId': 43, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 429133201}, {'heroId': 74, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 165559210}, {'heroId': 71, 'isRadiant': False, 'isRandom': True, 'steamAccountId': 205400018}, {'heroId': 101, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 1598599957}, {'heroId': 114, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 742343064}, {'heroId': 26, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 696411811}, {'heroId': 104, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 1400866711}]}, {'id': 9054155279, 'durationSeconds': 2254, 'didRadiantWin': True, 'players': [{'heroId': 43, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 26232395}, {'heroId': 14, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 97496872}, {'heroId': 84, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 126015671}, {'heroId': 88, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 1109961373}, {'heroId': 8, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 1095811129}, {'heroId': 7, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 814709049}, {'heroId': 44, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 45854226}, {'heroId': 74, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 1079313116}, {'heroId': 94, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 301781382}, {'heroId': 75, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 238622775}]}]
 
-for i in range(0, len(ids), 25):
-	data += fetch_matches(ids_pag[i:i+25])
+
+
+# for i in range(0, 3):
+# 		match_info = fetch_matches(ids_pag[i])
+# 		if match_info != None:
+# 			data.append(match_info)
+# 		else:
+# 			continue
+
+df_players = pd.json_normalize(
+    data,
+    record_path=["players"],  # шлях до гравців напряму від кореня матчу
+    meta=["id", "durationSeconds", "didRadiantWin"],  # поля матчу
+    meta_prefix="match_",
+)
+cols = [
+    "match_id",
+    "match_durationSeconds",
+    "match_didRadiantWin",
+    "steamAccountId",
+    "heroId",
+    "isRadiant",
+    "isRandom",
+]
+df_players = df_players[cols]
+
+print(df_players.head())
+print(df_players.columns)
