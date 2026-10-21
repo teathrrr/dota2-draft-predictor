@@ -51,12 +51,19 @@ QUERY = """
 query GetMatch($curr_id: Long!) {
   match(id: $curr_id) {
     id
-    durationSeconds
+    averageRank
+    actualRank
     didRadiantWin
     players {
       heroId
       isRadiant
       isRandom
+      dotaPlusHeroXp
+      roleBasic
+      role
+      lane
+      behavior
+      position
       steamAccountId
     }
   }
@@ -74,33 +81,43 @@ def fetch_matches(curr_id):
 	r.raise_for_status()
 	return r.json()["data"]["match"]
 
-data = [{'id': 9054156412, 'durationSeconds': 2646, 'didRadiantWin': False, 'players': [{'heroId': 30, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 797355128}, {'heroId': 7, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 119951490}, {'heroId': 93, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 191862235}, {'heroId': 43, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 429133201}, {'heroId': 74, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 165559210}, {'heroId': 71, 'isRadiant': False, 'isRandom': True, 'steamAccountId': 205400018}, {'heroId': 101, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 1598599957}, {'heroId': 114, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 742343064}, {'heroId': 26, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 696411811}, {'heroId': 104, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 1400866711}]}, {'id': 9054156412, 'durationSeconds': 2646, 'didRadiantWin': False, 'players': [{'heroId': 30, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 797355128}, {'heroId': 7, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 119951490}, {'heroId': 93, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 191862235}, {'heroId': 43, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 429133201}, {'heroId': 74, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 165559210}, {'heroId': 71, 'isRadiant': False, 'isRandom': True, 'steamAccountId': 205400018}, {'heroId': 101, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 1598599957}, {'heroId': 114, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 742343064}, {'heroId': 26, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 696411811}, {'heroId': 104, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 1400866711}]}, {'id': 9054155279, 'durationSeconds': 2254, 'didRadiantWin': True, 'players': [{'heroId': 43, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 26232395}, {'heroId': 14, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 97496872}, {'heroId': 84, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 126015671}, {'heroId': 88, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 1109961373}, {'heroId': 8, 'isRadiant': True, 'isRandom': False, 'steamAccountId': 1095811129}, {'heroId': 7, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 814709049}, {'heroId': 44, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 45854226}, {'heroId': 74, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 1079313116}, {'heroId': 94, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 301781382}, {'heroId': 75, 'isRadiant': False, 'isRandom': False, 'steamAccountId': 238622775}]}]
+data = []
 
 
 
-# for i in range(0, 3):
-# 		match_info = fetch_matches(ids_pag[i])
-# 		if match_info != None:
-# 			data.append(match_info)
-# 		else:
-# 			continue
+for i in range(0, 3):
+		match_info = fetch_matches(ids_pag[i])
+		if match_info != None:
+			data.append(match_info)
+		else:
+			continue
 
 df_players = pd.json_normalize(
     data,
-    record_path=["players"],  # шлях до гравців напряму від кореня матчу
-    meta=["id", "durationSeconds", "didRadiantWin"],  # поля матчу
+    record_path=["players"],
+    meta=["id", "averageRank", "actualRank", "didRadiantWin"],
     meta_prefix="match_",
 )
+
 cols = [
     "match_id",
-    "match_durationSeconds",
-    "match_didRadiantWin",
+    "match_averageRank",
+    "match_actualRank",
     "steamAccountId",
     "heroId",
     "isRadiant",
     "isRandom",
+    "dotaPlusHeroXp",
+    "roleBasic",
+    "role",
+    "lane",
+    "position",
+    "behavior",
+    "match_didRadiantWin"
 ]
 df_players = df_players[cols]
 
 print(df_players.head())
 print(df_players.columns)
+
+df_players.to_csv("dota_matches.csv", index=False, encoding="utf-8")
