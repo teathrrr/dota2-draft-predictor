@@ -1,6 +1,7 @@
 venv/
 .venv/
 .env
+.idea/
 env/
 __pycache__/
 *.pyc
@@ -9,4 +10,4 @@ data/
 *.csv
 *.parquet
 *.json
-dota_matches.csv
+dota_matches*.csv
