@@ -11,3 +11,4 @@ data/
 *.parquet
 *.json
 dota_matches*.csv
+old_data/
